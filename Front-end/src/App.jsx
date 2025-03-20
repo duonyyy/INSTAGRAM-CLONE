@@ -1,16 +1,36 @@
+import Home from './components/Home';
+import Login from './components/Login';
+import MainLayout from './components/MainLayout';
+import Signup from './components/Signup';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
-
-import './App.css'
-import { Button } from './components/ui/button'
+const browserRouter = createBrowserRouter([
+  {
+    path: "/",
+    element: <MainLayout />,
+    children: [
+      {
+        path: '/',
+        element: <Home />,
+      },
+    ],
+  },
+  {
+    path: '/login',
+    element: <Login />,
+  },
+  {
+    path: '/signup',
+    element: <Signup />,
+  },
+]);
 
 function App() {
-  
-
   return (
     <>
-     <Button>hiiii</Button>
+      <RouterProvider router={browserRouter} />
     </>
-  )
+  );
 }
 
-export default App
+export default App;
