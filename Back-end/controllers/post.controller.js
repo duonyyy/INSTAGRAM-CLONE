@@ -1,5 +1,6 @@
 import { Post } from '../models/post.model.js';
 import { User } from '../models/user.model.js';
+import { Comment } from '../models/comment.model.js';
 import cloudinary from '../utils/cloudinary.js';
 import sharp from 'sharp';
 
@@ -66,10 +67,7 @@ export const getAllPost = async (req, res) => {
       success: true,
     });
   } catch (error) {
-    console.error(error);
-    return res
-      .status(500)
-      .json({ message: 'Internal Server Error', error: error.message });
+    console.log(error);
   }
 };
 // lay bai viet cua 1 nguoi
@@ -254,13 +252,11 @@ export const bookmarkPost = async (req, res) => {
       // already bookmarked -> remove from the bookmark
       await user.updateOne({ $pull: { bookmarks: post._id } });
       await user.save();
-      return res
-        .status(200)
-        .json({
-          type: 'unsaved',
-          message: 'Post removed from bookmark',
-          success: true,
-        });
+      return res.status(200).json({
+        type: 'unsaved',
+        message: 'Post removed from bookmark',
+        success: true,
+      });
     } else {
       // bookmark krna pdega
       await user.updateOne({ $addToSet: { bookmarks: post._id } });
