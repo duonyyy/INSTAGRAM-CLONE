@@ -64,6 +64,9 @@ const LeftSidebar = () => {
       case 'Create':
         setOpen(true);
         break;
+      case 'Profile':
+        navigate(`/profile/${user?._id}`);
+        break;
     }
   };
 

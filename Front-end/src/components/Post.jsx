@@ -148,46 +148,49 @@ const Post = ({ post }) => {
     setIsDeleteModalOpen(true);
   };
 
-  const confirmDelete = async () => {
-    setIsDeleteModalOpen(false);
-    setIsLoading(true);
-    const originalPosts = [...posts];
-    const updatedPostData = posts.filter((postItem) => postItem?._id !== post?._id);
-    dispatch(setPosts(updatedPostData));
-    try {
-      const res = await axios.delete(
-        `http://localhost:8080/api/v1/post/delete/${post?._id}`,
-        { withCredentials: true }
+  const confirmDelete = async () => {  
+    setIsDeleteModalOpen(false);     // Đóng modal xác nhận xóa bằng cách set state về false
+    setIsLoading(true);              // Bật trạng thái loading (có thể hiển thị spinner) bằng cách set state về true
+    
+    const originalPosts = [...posts]; // Tạo bản sao của mảng posts hiện tại để backup phòng trường hợp lỗi
+    const updatedPostData = posts.filter((postItem) => postItem?._id !== post?._id); // Tạo mảng mới lọc bỏ post cần xóa
+    dispatch(setPosts(updatedPostData)); // Cập nhật state Redux với danh sách posts mới (xóa ở UI trước)
+
+    try {  
+      const res = await axios.delete(  
+        `http://localhost:8080/api/v1/post/delete/${post?._id}`, 
+        { withCredentials: true }     
       );
-      if (res.data.success) {
-        toast.success(res.data.message);
-      } else {
-        dispatch(setPosts(originalPosts));
-        toast.error('Failed to delete post.');
+      
+      if (res.data.success) {         
+        toast.success(res.data.message); 
+      } else {                        
+        dispatch(setPosts(originalPosts)); 
+        toast.error('Failed to delete post.'); 
       }
-    } catch (error) {
-      console.error('Error deleting post:', error);
+    } catch (error) {                
+      console.error('Error deleting post:', error); 
       dispatch(setPosts(originalPosts));
       toast.error(error.response?.data?.message || 'Failed to delete post.');
-    } finally {
-      setIsLoading(false);
+    } finally {                        // Khối finally luôn chạy bất kể thành công hay thất bại
+      setIsLoading(false);            // Tắt trạng thái loading
     }
   };
 
-  const bookmarkHandler = async () => {
-    try {
-      const res = await axios.get(
-        `http://localhost:8080/api/v1/post/${post._id}/bookmark`,
-        { withCredentials: true }
-      );
-      if (res.data.success) {
-        toast.success(res.data.message);
-      }
-    } catch (error) {
-      console.error('Error bookmarking post:', error);
-      toast.error(error.response?.data?.message || 'Failed to bookmark post.');
-    }
-  };
+  // const bookmarkHandler = async () => {
+  //   try {
+  //     const res = await axios.get(
+  //       `http://localhost:8080/api/v1/post/${post._id}/bookmark`,
+  //       { withCredentials: true }
+  //     );
+  //     if (res.data.success) {
+  //       toast.success(res.data.message);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error bookmarking post:', error);
+  //     toast.error(error.response?.data?.message || 'Failed to bookmark post.');
+  //   }
+  // };
 
   return (
     <div className="my-8 w-full max-w-sm mx-auto">
@@ -263,7 +266,7 @@ const Post = ({ post }) => {
           <Send className="cursor-pointer hover:text-gray-600" />
         </div>
         <Bookmark
-          onClick={bookmarkHandler}
+          // onClick={bookmarkHandler}
           className="cursor-pointer hover:text-gray-600"
         />
       </div>
