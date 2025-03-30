@@ -1,3 +1,4 @@
+import EditProfile from './components/EditProfile';
 import Home from './components/Home';
 import Login from './components/Login';
 import MainLayout from './components/MainLayout';
@@ -17,6 +18,10 @@ const browserRouter = createBrowserRouter([
       {
         path: '/profile/:id',
         element: <Profile />,
+      },
+      {
+        path: '/account/edit',
+        element: <EditProfile />
       },
     ],
   },
