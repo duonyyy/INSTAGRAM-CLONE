@@ -6,9 +6,10 @@ import userRoute from './routes/user.route.js';
 import postRoute from './routes/post.route.js';
 import messageRoute from './routes/message.route.js';
 import connectDB from './utils/db.js';
-
+import { app, server } from './socket/socket.js';
 dotenv.config({});
-const app = express();
+
+// const app = express();
 
 const PORT = process.env.PORT || 8080; // Đồng bộ với 8080
 const dbUrl = process.env.MONGO_URL;
@@ -39,6 +40,6 @@ app.use('/api/v1/user', userRoute);
 app.use('/api/v1/post', postRoute);
 app.use('/api/v1/message', messageRoute);
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server is listening on port ${PORT}`);
 });

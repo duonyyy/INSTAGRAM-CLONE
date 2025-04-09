@@ -15,6 +15,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import CreatePost from './CreatePost';
+import { setPosts, setSelectedPost } from '@/redux/postSlice';
 
 const LeftSidebar = () => {
   const navigate = useNavigate();
@@ -28,8 +29,10 @@ const LeftSidebar = () => {
         withCredentials: true,
       });
       if (res.data.success) {
-        navigate('/login');
         dispatch(setAuthUser(null));
+        dispatch(setSelectedPost(null));
+        dispatch(setPosts([]));
+        navigate("/login");
         toast.success(res.data.message);
       }
     } catch (error) {
@@ -69,6 +72,9 @@ const LeftSidebar = () => {
         break;
       case 'Home':
         navigate('/');
+        break;
+      case 'Messages':
+        navigate('/chat');
         break;
     }
   };
