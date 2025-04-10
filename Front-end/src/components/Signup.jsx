@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Label } from '@/components/ui/label'; // Giả sử đúng đường dẫn
 import { Input } from './ui/input';
 import { Button } from './ui/button';
@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import { useSelector } from 'react-redux';
 
 const Signup = () => {
   const [input, setInput] = useState({
@@ -13,7 +14,7 @@ const Signup = () => {
     email: '',
     password: '',
   });
-
+  const { user } = useSelector((store) => store.auth);
   const changeEventHandler = (e) => {
     setInput({
       ...input,
@@ -50,7 +51,11 @@ const Signup = () => {
       toast.error(error.response.data.message);
     }
   };
-
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, []);
   return (
     <div className="flex items-center w-screen h-screen justify-center">
       <form

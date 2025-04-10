@@ -148,49 +148,52 @@ const Post = ({ post }) => {
     setIsDeleteModalOpen(true);
   };
 
-  const confirmDelete = async () => {  
-    setIsDeleteModalOpen(false);     // Đóng modal xác nhận xóa bằng cách set state về false
-    setIsLoading(true);              // Bật trạng thái loading (có thể hiển thị spinner) bằng cách set state về true
-    
+  const confirmDelete = async () => {
+    setIsDeleteModalOpen(false); // Đóng modal xác nhận xóa bằng cách set state về false
+    setIsLoading(true); // Bật trạng thái loading (có thể hiển thị spinner) bằng cách set state về true
+
     const originalPosts = [...posts]; // Tạo bản sao của mảng posts hiện tại để backup phòng trường hợp lỗi
-    const updatedPostData = posts.filter((postItem) => postItem?._id !== post?._id); // Tạo mảng mới lọc bỏ post cần xóa
+    const updatedPostData = posts.filter(
+      (postItem) => postItem?._id !== post?._id
+    ); // Tạo mảng mới lọc bỏ post cần xóa
     dispatch(setPosts(updatedPostData)); // Cập nhật state Redux với danh sách posts mới (xóa ở UI trước)
 
-    try {  
-      const res = await axios.delete(  
-        `http://localhost:8080/api/v1/post/delete/${post?._id}`, 
-        { withCredentials: true }     
+    try {
+      const res = await axios.delete(
+        `http://localhost:8080/api/v1/post/delete/${post?._id}`,
+        { withCredentials: true }
       );
-      
-      if (res.data.success) {         
-        toast.success(res.data.message); 
-      } else {                        
-        dispatch(setPosts(originalPosts)); 
-        toast.error('Failed to delete post.'); 
+
+      if (res.data.success) {
+        toast.success(res.data.message);
+      } else {
+        dispatch(setPosts(originalPosts));
+        toast.error('Failed to delete post.');
       }
-    } catch (error) {                
-      console.error('Error deleting post:', error); 
+    } catch (error) {
+      console.error('Error deleting post:', error);
       dispatch(setPosts(originalPosts));
       toast.error(error.response?.data?.message || 'Failed to delete post.');
-    } finally {                        // Khối finally luôn chạy bất kể thành công hay thất bại
-      setIsLoading(false);            // Tắt trạng thái loading
+    } finally {
+      // Khối finally luôn chạy bất kể thành công hay thất bại
+      setIsLoading(false); // Tắt trạng thái loading
     }
   };
 
-  // const bookmarkHandler = async () => {
-  //   try {
-  //     const res = await axios.get(
-  //       `http://localhost:8080/api/v1/post/${post._id}/bookmark`,
-  //       { withCredentials: true }
-  //     );
-  //     if (res.data.success) {
-  //       toast.success(res.data.message);
-  //     }
-  //   } catch (error) {
-  //     console.error('Error bookmarking post:', error);
-  //     toast.error(error.response?.data?.message || 'Failed to bookmark post.');
-  //   }
-  // };
+  const bookmarkHandler = async () => {
+    try {
+      const res = await axios.get(
+        `http://localhost:8080/api/v1/post/${post._id}/bookmark`,
+        { withCredentials: true }
+      );
+      if (res.data.success) {
+        toast.success(res.data.message);
+      }
+    } catch (error) {
+      console.error('Error bookmarking post:', error);
+      toast.error(error.response?.data?.message || 'Failed to bookmark post.');
+    }
+  };
 
   return (
     <div className="my-8 w-full max-w-sm mx-auto">
@@ -220,7 +223,11 @@ const Post = ({ post }) => {
                 Unfollow
               </Button>
             )}
-            <Button variant="ghost" className="cursor-pointer w-fit">
+            <Button
+              variant="ghost"
+              className="cursor-pointer w-fit"
+              onClick={bookmarkHandler}
+            >
               Add to favorites
             </Button>
             {user && user?._id === post?.author._id && (
@@ -247,13 +254,17 @@ const Post = ({ post }) => {
             <FaHeart
               onClick={likeOrDislikeHandler}
               size={'22px'}
-              className={`cursor-pointer text-red-600 ${isLiking ? 'opacity-50' : ''}`}
+              className={`cursor-pointer text-red-600 ${
+                isLiking ? 'opacity-50' : ''
+              }`}
             />
           ) : (
             <FaRegHeart
               onClick={likeOrDislikeHandler}
               size={'22px'}
-              className={`cursor-pointer hover:text-gray-600 ${isLiking ? 'opacity-50' : ''}`}
+              className={`cursor-pointer hover:text-gray-600 ${
+                isLiking ? 'opacity-50' : ''
+              }`}
             />
           )}
           <MessageCircle
@@ -266,7 +277,7 @@ const Post = ({ post }) => {
           <Send className="cursor-pointer hover:text-gray-600" />
         </div>
         <Bookmark
-          // onClick={bookmarkHandler}
+          onClick={bookmarkHandler}
           className="cursor-pointer hover:text-gray-600"
         />
       </div>
@@ -299,7 +310,9 @@ const Post = ({ post }) => {
         {text && (
           <span
             onClick={commentHandler}
-            className={`text-[#3BADF8] ${isCommenting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            className={`text-[#3BADF8] ${
+              isCommenting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+            }`}
           >
             {isCommenting ? 'Posting...' : 'Post'}
           </span>
@@ -312,7 +325,8 @@ const Post = ({ post }) => {
           <div className="text-center">
             <h2 className="text-lg font-semibold">Delete Post?</h2>
             <p className="text-sm text-gray-500 mt-2">
-              Are you sure you want to delete this post? This action cannot be undone.
+              Are you sure you want to delete this post? This action cannot be
+              undone.
             </p>
           </div>
           <div className="flex justify-center gap-4 mt-4">

@@ -3,7 +3,7 @@ import { User } from '../models/user.model.js';
 import { Comment } from '../models/comment.model.js';
 import cloudinary from '../utils/cloudinary.js';
 import sharp from 'sharp';
-
+import { getReceiverSocketId, io } from '../socket/socket.js';
 // Thêm mới bài viết
 export const addNewPost = async (req, res) => {
   try {
@@ -114,16 +114,16 @@ export const likePost = async (req, res) => {
     await post.save();
 
     // implement socket io for real time notification
-    const user = await User.findById(likeKrneWalaUserKiId).select(
+    const user = await User.findById(curentUserId).select(
       'username profilePicture'
     );
 
     const postOwnerId = post.author.toString();
-    if (postOwnerId !== likeKrneWalaUserKiId) {
+    if (postOwnerId !== curentUserId) {
       // emit a notification event
       const notification = {
         type: 'like',
-        userId: likeKrneWalaUserKiId,
+        userId: curentUserId,
         userDetails: user,
         postId,
         message: 'Your post was liked',
@@ -143,34 +143,33 @@ export const likePost = async (req, res) => {
 // dislike bai viet
 export const dislikePost = async (req, res) => {
   try {
-    const curentUserId = req.id;
-    const postId = req.params.id;
-    const post = await Post.findById(postId);
+    const curentUserId = req.id; // ID của người dùng hiện tại
+    const postId = req.params.id; // ID của bài viết từ tham số URL
+    const post = await Post.findById(postId); // Tìm bài viết trong DB
     if (!post)
       return res
         .status(404)
         .json({ message: 'Post not found', success: false });
 
-    // like logic started
-    await post.updateOne({ $pull: { likes: curentUserId } });
-    await post.save();
+    await post.updateOne({ $pull: { likes: curentUserId } }); // Xóa userId khỏi mảng likes
+    await post.save(); // Lưu thay đổi
 
-    // implement socket io for real time notification
-    const user = await User.findById(likeKrneWalaUserKiId).select(
+    // Implement socket.io for real-time notification
+    const user = await User.findById(curentUserId).select(
       'username profilePicture'
-    );
-    const postOwnerId = post.author.toString();
-    if (postOwnerId !== likeKrneWalaUserKiId) {
-      // emit a notification event
+    ); // Sửa lỗi biến
+    const postOwnerId = post.author.toString(); // ID của chủ bài viết
+    if (postOwnerId !== curentUserId) {
+      // Emit a notification event
       const notification = {
         type: 'dislike',
-        userId: likeKrneWalaUserKiId,
+        userId: curentUserId, // Sửa lỗi biến
         userDetails: user,
         postId,
-        message: 'Your post was liked',
+        message: 'Your post was disliked', // Sửa message cho phù hợp
       };
-      const postOwnerSocketId = getReceiverSocketId(postOwnerId);
-      io.to(postOwnerSocketId).emit('notification', notification);
+      const postOwnerSocketId = getReceiverSocketId(postOwnerId); // Lấy socket ID của chủ bài viết
+      io.to(postOwnerSocketId).emit('notification', notification); // Gửi thông báo qua Socket.IO
     }
 
     return res.status(200).json({ message: 'Post disliked', success: true });
