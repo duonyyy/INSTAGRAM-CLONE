@@ -4,7 +4,7 @@ import cloudinary from '../utils/cloudinary.js';
 import getDataUri from '../utils/datauri.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-
+import { getReceiverSocketId, io } from '../socket/socket.js';
 const hashPassword = (password) =>
   bcrypt.hashSync(password, bcrypt.genSaltSync(10));
 export const register = async (req, res) => {
@@ -68,16 +68,19 @@ export const login = async (req, res) => {
       expiresIn: '1d',
     });
 
-    // populate each post if in the posts array
+    // Populate posts, kiểm tra post tồn tại trước khi truy cập author
     const populatedPosts = await Promise.all(
       user.posts.map(async (postId) => {
         const post = await Post.findById(postId);
-        if (post.author.equals(user._id)) {
+        if (post && post.author.equals(user._id)) {
+          // Kiểm tra post tồn tại
           return post;
         }
         return null;
       })
     );
+    const validPosts = populatedPosts.filter((post) => post !== null); // Lọc các post null
+
     user = {
       _id: user._id,
       username: user.username,
@@ -86,8 +89,9 @@ export const login = async (req, res) => {
       bio: user.bio,
       followers: user.followers,
       following: user.following,
-      posts: populatedPosts,
+      posts: validPosts, // Chỉ trả về các bài viết hợp lệ
     };
+
     return res
       .cookie('token', token, {
         httpOnly: true,
@@ -100,7 +104,10 @@ export const login = async (req, res) => {
         user,
       });
   } catch (error) {
-    console.log(error);
+    console.error('Error in login:', error);
+    return res
+      .status(500)
+      .json({ message: 'Internal Server Error', error: error.message });
   }
 };
 
@@ -181,43 +188,44 @@ export const getSuggestedUsers = async (req, res) => {
     console.log(error);
   }
 };
+// controllers/userController.js
 export const followOrUnfollow = async (req, res) => {
   try {
     const currentUserId = req.id;
     const targetUserId = req.params.id;
-    // 2 ng dung phai khac nhau
+
     if (currentUserId === targetUserId) {
       return res.status(400).json({
         message: 'You cannot follow/unfollow yourself',
         success: false,
       });
     }
+
     const user = await User.findById(currentUserId);
     const targetUser = await User.findById(targetUserId);
-    // phai ton tai trong database
     if (!user || !targetUser) {
-      return res.status(400).json({
-        message: 'User not found',
-        success: false,
-      });
+      return res
+        .status(400)
+        .json({ message: 'User not found', success: false });
     }
+
     const isFollowing = user.following.includes(targetUserId);
-    if (!isFollowing) {
-      // logic unfollow
+
+    if (isFollowing) {
       await Promise.all([
-        User.updateOne([
-          User.updateOne(
-            { _id: currentUserId },
-            { $pull: { following: targetUserId } }
-          ),
-          User.updateOne(
-            { _id: targetUserId },
-            { $pull: { followers: currentUserId } }
-          ),
-        ]),
+        User.updateOne(
+          { _id: currentUserId },
+          { $pull: { following: targetUserId } }
+        ),
+        User.updateOne(
+          { _id: targetUserId },
+          { $pull: { followers: currentUserId } }
+        ),
       ]);
+      return res
+        .status(200)
+        .json({ message: 'Unfollowed successfully', success: true });
     } else {
-      // follow logic ayega
       await Promise.all([
         User.updateOne(
           { _id: currentUserId },
@@ -228,11 +236,37 @@ export const followOrUnfollow = async (req, res) => {
           { $push: { followers: currentUserId } }
         ),
       ]);
+
+      const recentPost = await Post.findOne({ author: targetUserId })
+        .sort({ createdAt: -1 })
+        .select('_id');
+
+      const notification = {
+        _id: Date.now().toString(),
+        type: 'follow',
+        userId: currentUserId,
+        userDetails: {
+          username: user.username,
+          profilePicture: user.profilePicture,
+        },
+        targetUserId,
+        message: `${user.username} started following you`,
+        postId: recentPost?._id || null,
+        timestamp: new Date(),
+      };
+
+      const targetUserSocketId = getReceiverSocketId(targetUserId);
+      if (targetUserSocketId)
+        io.to(targetUserSocketId).emit('notification', notification);
+
       return res
         .status(200)
-        .json({ message: 'followed successfully', success: true });
+        .json({ message: 'Followed successfully', success: true });
     }
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    return res
+      .status(500)
+      .json({ message: 'Internal Server Error', error: error.message });
   }
 };

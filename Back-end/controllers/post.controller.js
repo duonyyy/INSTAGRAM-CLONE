@@ -8,36 +8,51 @@ import { getReceiverSocketId, io } from '../socket/socket.js';
 export const addNewPost = async (req, res) => {
   try {
     const { caption } = req.body;
-    const image = req.file;
+    const files = req.files; // Nhận mảng các file từ multer
     const authorId = req.id;
 
-    if (!image) return res.status(400).json({ message: 'Image required' });
-    // sharp image
-    const optimizedImageBuffer = await sharp(image.buffer)
-      .resize({ width: 800, height: 800, fit: 'inside' })
-      .toFormat('jpeg', { quality: 90 })
-      .toBuffer();
+    // Kiểm tra xem có file nào được upload không
+    if (!files || files.length === 0) {
+      return res.status(400).json({ message: 'At least one image is required' });
+    }
 
-    const fileUri = `data:image/jpeg;base64,${optimizedImageBuffer.toString(
-      'base64'
-    )}`;
-    const cloudResponse = await cloudinary.uploader.upload(fileUri);
+    // Xử lý và upload từng ảnh
+    const uploadedImages = [];
+    for (const file of files) {
+      // Tối ưu hóa ảnh với sharp
+      const optimizedImageBuffer = await sharp(file.buffer)
+        .resize({ width: 800, height: 800, fit: 'inside' })
+        .toFormat('jpeg', { quality: 90 })
+        .toBuffer();
 
+      // Chuyển buffer thành base64 để upload lên Cloudinary
+      const fileUri = `data:image/jpeg;base64,${optimizedImageBuffer.toString('base64')}`;
+      const cloudResponse = await cloudinary.uploader.upload(fileUri);
+
+      // Lưu URL ảnh đã upload vào mảng
+      uploadedImages.push(cloudResponse.secure_url);
+    }
+
+    // Tạo bài viết mới với mảng images
     const post = await Post.create({
       caption,
-      image: cloudResponse.secure_url,
+      images: uploadedImages, // Lưu mảng các URL ảnh
       author: authorId,
     });
 
+    // Cập nhật danh sách bài viết của user
     const user = await User.findById(authorId);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
     user.posts.push(post._id);
     await user.save();
 
+    // Populate thông tin author (loại bỏ password)
     await post.populate({ path: 'author', select: '-password' });
 
     return res.status(201).json({
-      message: 'New post added',
+      message: 'New post added with multiple images',
       post,
       success: true,
     });
@@ -102,123 +117,116 @@ export const getUserPost = async (req, res) => {
 // like bai viet
 export const likePost = async (req, res) => {
   try {
-    const curentUserId = req.id;
+    const currentUserId = req.id;
     const postId = req.params.id;
     const post = await Post.findById(postId);
     if (!post)
-      return res
-        .status(404)
-        .json({ message: 'Post not found', success: false });
+      return res.status(404).json({ message: "Post not found", success: false });
 
-    await post.updateOne({ $addToSet: { likes: curentUserId } });
-    await post.save();
+    await post.updateOne({ $addToSet: { likes: currentUserId } });
 
-    // implement socket io for real time notification
-    const user = await User.findById(curentUserId).select(
-      'username profilePicture'
-    );
-
+    const user = await User.findById(currentUserId).select("username profilePicture");
     const postOwnerId = post.author.toString();
-    if (postOwnerId !== curentUserId) {
-      // emit a notification event
+    if (postOwnerId !== currentUserId) {
       const notification = {
-        type: 'like',
-        userId: curentUserId,
-        userDetails: user,
+        _id: Date.now().toString(),
+        type: "like",
+        userId: currentUserId,
+        userDetails: { username: user.username, profilePicture: user.profilePicture },
         postId,
-        message: 'Your post was liked',
+        message: `${user.username} liked your post`,
+        timestamp: new Date(),
       };
       const postOwnerSocketId = getReceiverSocketId(postOwnerId);
-      io.to(postOwnerSocketId).emit('notification', notification);
+      if (postOwnerSocketId) io.to(postOwnerSocketId).emit("notification", notification);
     }
 
-    return res.status(200).json({ message: 'Post liked', success: true });
+    return res.status(200).json({ message: "Post liked", success: true });
   } catch (error) {
     console.error(error);
-    return res
-      .status(500)
-      .json({ message: 'Internal Server Error', error: error.message });
+    return res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };
-// dislike bai viet
+// dislikePost
 export const dislikePost = async (req, res) => {
   try {
-    const curentUserId = req.id; // ID của người dùng hiện tại
-    const postId = req.params.id; // ID của bài viết từ tham số URL
-    const post = await Post.findById(postId); // Tìm bài viết trong DB
+    const currentUserId = req.id;
+    const postId = req.params.id;
+    const post = await Post.findById(postId);
     if (!post)
-      return res
-        .status(404)
-        .json({ message: 'Post not found', success: false });
+      return res.status(404).json({ message: 'Post not found', success: false });
 
-    await post.updateOne({ $pull: { likes: curentUserId } }); // Xóa userId khỏi mảng likes
-    await post.save(); // Lưu thay đổi
+    await post.updateOne({ $pull: { likes: currentUserId } });
 
-    // Implement socket.io for real-time notification
-    const user = await User.findById(curentUserId).select(
-      'username profilePicture'
-    ); // Sửa lỗi biến
-    const postOwnerId = post.author.toString(); // ID của chủ bài viết
-    if (postOwnerId !== curentUserId) {
-      // Emit a notification event
+    const user = await User.findById(currentUserId).select('username profilePicture');
+    const postOwnerId = post.author.toString();
+    if (postOwnerId !== currentUserId) {
       const notification = {
         type: 'dislike',
-        userId: curentUserId, // Sửa lỗi biến
+        userId: currentUserId,
         userDetails: user,
         postId,
-        message: 'Your post was disliked', // Sửa message cho phù hợp
+        message: `${user.username} removed their like from your post`,
       };
-      const postOwnerSocketId = getReceiverSocketId(postOwnerId); // Lấy socket ID của chủ bài viết
-      io.to(postOwnerSocketId).emit('notification', notification); // Gửi thông báo qua Socket.IO
+      const postOwnerSocketId = getReceiverSocketId(postOwnerId);
+      if (postOwnerSocketId) io.to(postOwnerSocketId).emit('notification', notification);
     }
 
-    return res.status(200).json({ message: 'Post disliked', success: true });
+    const updatedPost = await Post.findById(postId).populate('author', 'username profilePicture');
+    return res.status(200).json({ message: 'Post disliked', post: updatedPost, success: true });
   } catch (error) {
     console.error(error);
-    return res
-      .status(500)
-      .json({ message: 'Internal Server Error', error: error.message });
+    return res.status(500).json({ message: 'Internal Server Error', error: error.message });
   }
 };
 // viet comment
+
 export const addComment = async (req, res) => {
   try {
     const postId = req.params.id;
-    const commentKrneWalaUserKiId = req.id;
-
+    const currentUserId = req.id;
     const { text } = req.body;
 
     const post = await Post.findById(postId);
+    if (!post)
+      return res.status(404).json({ message: "Post not found", success: false });
 
     if (!text)
-      return res
-        .status(400)
-        .json({ message: 'text is required', success: false });
+      return res.status(400).json({ message: "Text is required", success: false });
 
     const comment = await Comment.create({
       text,
-      author: commentKrneWalaUserKiId,
+      author: currentUserId,
       post: postId,
     });
 
-    await comment.populate({
-      path: 'author',
-      select: 'username profilePicture',
-    });
+    await comment.populate({ path: "author", select: "username profilePicture" });
 
     post.comments.push(comment._id);
     await post.save();
 
-    return res.status(201).json({
-      message: 'Comment Added',
-      comment,
-      success: true,
-    });
+    const postOwnerId = post.author.toString();
+    if (postOwnerId !== currentUserId) {
+      const notification = {
+        _id: Date.now().toString(),
+        type: "comment",
+        userId: currentUserId,
+        userDetails: { username: comment.author.username, profilePicture: comment.author.profilePicture },
+        postId,
+        message: `${comment.author.username} commented on your post: ${text}`,
+        timestamp: new Date(),
+      };
+      const postOwnerSocketId = getReceiverSocketId(postOwnerId);
+      if (postOwnerSocketId) io.to(postOwnerSocketId).emit("notification", notification);
+    }
+
+    return res.status(201).json({ message: "Comment Added", comment, success: true });
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    return res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };
-// lay comment cua 1 bai viet
+// getCommentsOfPost
 export const getCommentsOfPost = async (req, res) => {
   try {
     const postId = req.params.id;
@@ -228,17 +236,16 @@ export const getCommentsOfPost = async (req, res) => {
       'username profilePicture'
     );
 
-    if (!comments)
-      return res
-        .status(404)
-        .json({ message: 'No comments found for this post', success: false });
+    if (comments.length === 0)
+      return res.status(200).json({ message: 'No comments found for this post', success: true, comments: [] });
 
     return res.status(200).json({ success: true, comments });
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    return res.status(500).json({ message: 'Internal Server Error', error: error.message });
   }
 };
-// xoa bai viet
+// deletePost
 export const deletePost = async (req, res) => {
   try {
     const postId = req.params.id;
@@ -246,23 +253,22 @@ export const deletePost = async (req, res) => {
 
     const post = await Post.findById(postId);
     if (!post)
-      return res
-        .status(404)
-        .json({ message: 'Post not found', success: false });
+      return res.status(404).json({ message: 'Post not found', success: false });
 
-    // check if the logged-in user is the owner of the post
     if (post.author.toString() !== authorId)
       return res.status(403).json({ message: 'Unauthorized' });
 
-    // delete post
+    for (const imageUrl of post.images) {
+      const publicId = imageUrl.split('/').pop().split('.')[0];
+      await cloudinary.uploader.destroy(publicId);
+    }
+
     await Post.findByIdAndDelete(postId);
 
-    // remove the post id from the user's post
     let user = await User.findById(authorId);
     user.posts = user.posts.filter((id) => id.toString() !== postId);
     await user.save();
 
-    // delete associated comments
     await Comment.deleteMany({ post: postId });
 
     return res.status(200).json({
@@ -270,39 +276,37 @@ export const deletePost = async (req, res) => {
       message: 'Post deleted',
     });
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    return res.status(500).json({ message: 'Internal Server Error', error: error.message });
   }
 };
-// bookmark bai viet
+// bookmarkPost
 export const bookmarkPost = async (req, res) => {
   try {
     const postId = req.params.id;
     const authorId = req.id;
     const post = await Post.findById(postId);
     if (!post)
-      return res
-        .status(404)
-        .json({ message: 'Post not found', success: false });
+      return res.status(404).json({ message: 'Post not found', success: false });
 
     const user = await User.findById(authorId);
     if (user.bookmarks.includes(post._id)) {
-      // already bookmarked -> remove from the bookmark
       await user.updateOne({ $pull: { bookmarks: post._id } });
-      await user.save();
       return res.status(200).json({
         type: 'unsaved',
         message: 'Post removed from bookmark',
         success: true,
       });
     } else {
-      // bookmark krna pdega
       await user.updateOne({ $addToSet: { bookmarks: post._id } });
-      await user.save();
-      return res
-        .status(200)
-        .json({ type: 'saved', message: 'Post bookmarked', success: true });
+      return res.status(200).json({
+        type: 'saved',
+        message: 'Post bookmarked',
+        success: true,
+      });
     }
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    return res.status(500).json({ message: 'Internal Server Error', error: error.message });
   }
 };

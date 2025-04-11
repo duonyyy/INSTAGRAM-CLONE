@@ -1,60 +1,78 @@
-import React, { useRef, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader } from './ui/dialog';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Textarea } from './ui/textarea';
-import { Button } from './ui/button';
-import { readFileAsDataURL } from '@/lib/utils';
-import { Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
-import axios from 'axios';
-import { useDispatch, useSelector } from 'react-redux'; // Hook Redux để truy cập store và dispatch action
-import { setPosts } from '@/redux/postSlice';
-//import { setPosts } from '@/redux/postSlice'; // Action để cập nhật danh sách bài post trong Redux store
+import React, { useRef, useState } from "react";
+import { Dialog, DialogContent, DialogHeader } from "./ui/dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Textarea } from "./ui/textarea";
+import { Button } from "./ui/button";
+import { readFileAsDataURL } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import axios from "axios";
+import { useDispatch, useSelector } from "react-redux";
+import { setPosts } from "@/redux/postSlice";
 
 const CreatePost = ({ open, setOpen }) => {
   const imageRef = useRef();
-  const [file, setFile] = useState('');
-  const [caption, setCaption] = useState('');
-  const [imagePreview, setImagePreview] = useState('');
+  const [files, setFiles] = useState([]); // Lưu mảng các file
+  const [caption, setCaption] = useState("");
+  const [imagePreviews, setImagePreviews] = useState([]); // Lưu mảng các URL preview
   const [loading, setLoading] = useState(false);
-  const { user } = useSelector((store) => store.auth); // Lấy thông tin user từ Redux store (auth slice)
-  const { posts } = useSelector((store) => store.post); // Lấy danh sách posts từ Redux store (post slice)
-  const dispatch = useDispatch(); // Hàm dispatch để gửi action tới Redux store
+  const { user } = useSelector((store) => store.auth);
+  const { posts } = useSelector((store) => store.post);
+  const dispatch = useDispatch();
 
   const fileChangeHandler = async (e) => {
-    // Xử lý khi người dùng chọn file
-    const file = e.target.files?.[0];
-    if (file) {
-      setFile(file);
-      const dataUrl = await readFileAsDataURL(file);
-      setImagePreview(dataUrl);
+    const selectedFiles = Array.from(e.target.files); // Chuyển FileList thành mảng
+    if (selectedFiles.length > 10) {
+      toast.error("You can only upload up to 10 images");
+      return;
     }
+
+    setFiles(selectedFiles); // Lưu mảng file
+
+    // Tạo URL preview cho từng file
+    const previews = await Promise.all(
+      selectedFiles.map(async (file) => {
+        return await readFileAsDataURL(file);
+      })
+    );
+    setImagePreviews(previews);
   };
 
   const createPostHandler = async () => {
     const formData = new FormData();
-    formData.append('caption', caption);
-    if (imagePreview) formData.append('image', file); // Nếu có ảnh preview, thêm file gốc vào FormData
+    formData.append("caption", caption);
+    if (files.length > 0) {
+      files.forEach((file) => {
+        formData.append("images", file); // Thêm từng file vào field 'images'
+      });
+    } else {
+      toast.error("Please select at least one image");
+      return;
+    }
+
     try {
       setLoading(true);
       const res = await axios.post(
-        'http://localhost:8080/api/v1/post/addpost',
+        "http://localhost:8080/api/v1/post/addpost",
         formData,
         {
           headers: {
-            'Content-Type': 'multipart/form-data',
+            "Content-Type": "multipart/form-data",
           },
-          withCredentials: true, // Gửi cookie/credentials để xác thực (nếu cần)
+          withCredentials: true,
         }
       );
       if (res.data.success) {
-        // Nếu API trả về thành công
-        dispatch(setPosts([res.data.post, ...posts])); // Thêm bài post mới vào đầu danh sách posts trong Redux
+        dispatch(setPosts([res.data.post, ...posts]));
         toast.success(res.data.message);
         setOpen(false);
+        // Reset state sau khi đăng bài
+        setFiles([]);
+        setImagePreviews([]);
+        setCaption("");
       }
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Failed to create post");
     } finally {
       setLoading(false);
     }
@@ -68,53 +86,54 @@ const CreatePost = ({ open, setOpen }) => {
         </DialogHeader>
         <div className="flex gap-3 items-center">
           <Avatar>
-            <AvatarImage src={user?.profilePicture} alt="img" />{' '}
-            <AvatarFallback>CN</AvatarFallback>{' '}
+            <AvatarImage src={user?.profilePicture} alt="img" />
+            <AvatarFallback>CN</AvatarFallback>
           </Avatar>
           <div>
-            <h1 className="font-semibold text-xs">{user?.username}</h1>{' '}
-            <span className="text-gray-600 text-xs">Bio here...</span>{' '}
-            {/* Bio mặc định */}
+            <h1 className="font-semibold text-xs">{user?.username}</h1>
+            <span className="text-gray-600 text-xs">Bio here...</span>
           </div>
         </div>
         <Textarea
-          value={caption} // Giá trị caption từ state
+          value={caption}
           onChange={(e) => setCaption(e.target.value)}
           className="focus-visible:ring-transparent border-none"
           placeholder="Write a caption..."
         />
-        {imagePreview && (
-          <div className="w-full h-64 flex items-center justify-center">
-            <img
-              src={imagePreview}
-              alt="preview_img"
-              className="object-cover h-full w-full rounded-md"
-            />
+        {imagePreviews.length > 0 && (
+          <div className="w-full flex flex-wrap gap-2">
+            {imagePreviews.map((preview, index) => (
+              <div key={index} className="w-32 h-32">
+                <img
+                  src={preview}
+                  alt={`preview-${index}`}
+                  className="object-cover w-full h-full rounded-md"
+                />
+              </div>
+            ))}
           </div>
         )}
         <input
-          ref={imageRef} // Gắn ref để điều khiển input file
+          ref={imageRef}
           type="file"
-          className="hidden" // Ẩn input file
-          onChange={fileChangeHandler} // Gọi hàm xử lý khi chọn file
+          accept="image/jpeg,image/png,image/gif" // Chỉ cho phép ảnh
+          multiple // Cho phép chọn nhiều file
+          className="hidden"
+          onChange={fileChangeHandler}
         />
         <Button
-          onClick={() => imageRef.current.click()} // Mở file explorer khi click button
-          className="w-fit mx-auto bg-[#0095F6] hover:bg-[#258bcf] "
+          onClick={() => imageRef.current.click()}
+          className="w-fit mx-auto bg-[#0095F6] hover:bg-[#258bcf]"
         >
           Select from computer
         </Button>
-        {imagePreview && // Nếu có ảnh preview thì hiển thị nút Post hoặc loading
+        {imagePreviews.length > 0 &&
           (loading ? (
-            <Button>
+            <Button disabled>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait
             </Button>
           ) : (
-            <Button
-              onClick={createPostHandler}
-              type="submit"
-              className="w-full"
-            >
+            <Button onClick={createPostHandler} type="submit" className="w-full">
               Post
             </Button>
           ))}

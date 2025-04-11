@@ -11,6 +11,11 @@ import { toast } from 'sonner';
 import { setPosts, setSelectedPost } from '@/redux/postSlice';
 import { Badge } from './ui/badge';
 import debounce from 'lodash/debounce';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation, Pagination } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
 
 const Post = ({ post }) => {
   const [text, setText] = useState('');
@@ -24,15 +29,12 @@ const Post = ({ post }) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [isCommenting, setIsCommenting] = useState(false);
+  const [isBookmarking, setIsBookmarking] = useState(false);
   const dispatch = useDispatch();
 
   const changeEventHandler = (e) => {
     const inputText = e.target.value;
-    if (inputText.trim()) {
-      setText(inputText);
-    } else {
-      setText('');
-    }
+    setText(inputText.trim() ? inputText : '');
   };
 
   // Hàm cơ bản cho like/dislike
@@ -84,14 +86,16 @@ const Post = ({ post }) => {
   };
 
   const likeOrDislikeHandler = debounce(likeOrDislikeHandlerBase, 300);
-
-  // Hàm cơ bản cho comment
   const commentHandlerBase = async () => {
-    if (isCommenting || !text.trim()) return; // Ngăn nếu đang xử lý hoặc text rỗng
+    if (!user) {
+      toast.error('Please log in to comment.');
+      return;
+    }
+    if (isCommenting || !text.trim()) return;
     setIsCommenting(true);
     const originalComments = [...comment];
     const originalPosts = [...posts];
-    const tempComment = { text, user: user._id, createdAt: new Date() };
+    const tempComment = { text, author: user, createdAt: new Date() };
     const updatedCommentData = [...comment, tempComment];
     setComment(updatedCommentData);
     const updatedPostData = posts.map((p) =>
@@ -109,30 +113,23 @@ const Post = ({ post }) => {
         }
       );
       if (res.data.success) {
-        const realComment = res.data.comment;
-        const finalCommentData = [...originalComments, realComment];
-        setComment(finalCommentData);
-        const finalPostData = posts.map((p) =>
-          p._id === post._id ? { ...p, comments: finalCommentData } : p
+        setComment([...originalComments, res.data.comment]);
+        dispatch(
+          setPosts(
+            posts.map((p) =>
+              p._id === post._id
+                ? { ...p, comments: [...originalComments, res.data.comment] }
+                : p
+            )
+          )
         );
-        dispatch(setPosts(finalPostData));
         toast.success(res.data.message);
-      } else {
-        setComment(originalComments);
-        dispatch(setPosts(originalPosts));
-        toast.error(res.data.message || 'Failed to add comment.');
-      }
+      } else throw new Error(res.data.message);
     } catch (error) {
       console.error('Error adding comment:', error);
       setComment(originalComments);
       dispatch(setPosts(originalPosts));
-      const errorMessage =
-        error.response?.status === 401
-          ? 'Please log in to comment.'
-          : error.response?.status === 400
-          ? 'Invalid comment. Please try again.'
-          : error.response?.data?.message || 'Failed to add comment.';
-      toast.error(errorMessage);
+      toast.error(error.message || 'Failed to add comment.');
     } finally {
       setIsCommenting(false);
     }
@@ -140,8 +137,8 @@ const Post = ({ post }) => {
 
   const commentHandler = debounce(commentHandlerBase, 300);
 
-  const deletePostHandler = async () => {
-    if (user?._id !== post.author?._id) {
+  const deletePostHandler = () => {
+    if (!user || user._id !== post.author?._id) {
       toast.error('You are not authorized to delete this post.');
       return;
     }
@@ -149,38 +146,34 @@ const Post = ({ post }) => {
   };
 
   const confirmDelete = async () => {
-    setIsDeleteModalOpen(false); // Đóng modal xác nhận xóa bằng cách set state về false
-    setIsLoading(true); // Bật trạng thái loading (có thể hiển thị spinner) bằng cách set state về true
-
-    const originalPosts = [...posts]; // Tạo bản sao của mảng posts hiện tại để backup phòng trường hợp lỗi
-    const updatedPostData = posts.filter(
-      (postItem) => postItem?._id !== post?._id
-    ); // Tạo mảng mới lọc bỏ post cần xóa
-    dispatch(setPosts(updatedPostData)); // Cập nhật state Redux với danh sách posts mới (xóa ở UI trước)
-
+    setIsDeleteModalOpen(false);
+    setIsLoading(true);
+    const originalPosts = [...posts];
+    const updatedPostData = posts.filter((p) => p._id !== post._id);
+    dispatch(setPosts(updatedPostData));
     try {
       const res = await axios.delete(
-        `http://localhost:8080/api/v1/post/delete/${post?._id}`,
+        `http://localhost:8080/api/v1/post/delete/${post._id}`,
         { withCredentials: true }
       );
-
-      if (res.data.success) {
-        toast.success(res.data.message);
-      } else {
-        dispatch(setPosts(originalPosts));
-        toast.error('Failed to delete post.');
-      }
+      if (!res.data.success) throw new Error(res.data.message);
+      toast.success(res.data.message);
     } catch (error) {
       console.error('Error deleting post:', error);
       dispatch(setPosts(originalPosts));
-      toast.error(error.response?.data?.message || 'Failed to delete post.');
+      toast.error(error.message || 'Failed to delete post.');
     } finally {
-      // Khối finally luôn chạy bất kể thành công hay thất bại
-      setIsLoading(false); // Tắt trạng thái loading
+      setIsLoading(false);
     }
   };
 
-  const bookmarkHandler = async () => {
+  const bookmarkHandlerBase = async () => {
+    if (!user) {
+      toast.error('Please log in to bookmark this post.');
+      return;
+    }
+    if (isBookmarking) return;
+    setIsBookmarking(true);
     try {
       const res = await axios.get(
         `http://localhost:8080/api/v1/post/${post._id}/bookmark`,
@@ -188,24 +181,30 @@ const Post = ({ post }) => {
       );
       if (res.data.success) {
         toast.success(res.data.message);
-      }
+      } else throw new Error(res.data.message);
     } catch (error) {
       console.error('Error bookmarking post:', error);
-      toast.error(error.response?.data?.message || 'Failed to bookmark post.');
+      toast.error(error.message || 'Failed to bookmark post.');
+    } finally {
+      setIsBookmarking(false);
     }
   };
+
+  const bookmarkHandler = debounce(bookmarkHandlerBase, 300);
+
+  if (!post) return null;
 
   return (
     <div className="my-8 w-full max-w-sm mx-auto">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Avatar>
-            <AvatarImage src={post.author?.profilePicture} alt="post_image" />
+            <AvatarImage src={post.author?.profilePicture} alt="post_author" />
             <AvatarFallback>CN</AvatarFallback>
           </Avatar>
           <div className="flex items-center gap-3">
-            <h1>{post.author?.username}</h1>
-            {user?._id === post.author._id && (
+            <h1>{post.author?.username || 'Unknown'}</h1>
+            {user?._id === post.author?._id && (
               <Badge variant="secondary">Author</Badge>
             )}
           </div>
@@ -215,22 +214,15 @@ const Post = ({ post }) => {
             <MoreHorizontal className="cursor-pointer" />
           </DialogTrigger>
           <DialogContent className="flex flex-col items-center text-sm text-center">
-            {post?.author?._id !== user?._id && (
-              <Button
-                variant="ghost"
-                className="cursor-pointer w-fit text-[#ED4956] font-bold"
-              >
-                Unfollow
-              </Button>
-            )}
             <Button
               variant="ghost"
               className="cursor-pointer w-fit"
               onClick={bookmarkHandler}
+              disabled={isBookmarking}
             >
-              Add to favorites
+              {isBookmarking ? 'Bookmarking...' : 'Add to favorites'}
             </Button>
-            {user && user?._id === post?.author._id && (
+            {user?._id === post.author?._id && (
               <Button
                 onClick={deletePostHandler}
                 variant="ghost"
@@ -243,17 +235,44 @@ const Post = ({ post }) => {
           </DialogContent>
         </Dialog>
       </div>
-      <img
-        className="rounded-sm my-2 w-full aspect-square object-cover"
-        src={post.image}
-        alt="post_img"
-      />
+
+      <Swiper
+        style={{
+          '--swiper-navigation-color': '#fff',
+          '--swiper-pagination-color': '#fff',
+        }}
+        pagination={{ clickable: true }}
+        modules={[Navigation, Pagination]}
+        className="mySwiper my-2 w-full aspect-square"
+      >
+        {post.images?.length > 0 ? (
+          post.images.map((image, index) => (
+            <SwiperSlide key={index}>
+              <img  onClick={() => {
+              dispatch(setSelectedPost(post));
+              setOpen(true);
+            }}
+                className="rounded-sm w-full h-full object-cover"
+                src={image}
+                alt={`post_img_${index}`}
+              />
+            </SwiperSlide>
+          ))
+        ) : (
+          <SwiperSlide>
+            <div className="w-full h-full flex items-center justify-center bg-gray-200 rounded-sm">
+              <span>No images available</span>
+            </div>
+          </SwiperSlide>
+        )}
+      </Swiper>
+
       <div className="flex items-center justify-between my-2">
         <div className="flex items-center gap-3">
           {liked ? (
             <FaHeart
               onClick={likeOrDislikeHandler}
-              size={'22px'}
+              size="22px"
               className={`cursor-pointer text-red-600 ${
                 isLiking ? 'opacity-50' : ''
               }`}
@@ -261,7 +280,7 @@ const Post = ({ post }) => {
           ) : (
             <FaRegHeart
               onClick={likeOrDislikeHandler}
-              size={'22px'}
+              size="22px"
               className={`cursor-pointer hover:text-gray-600 ${
                 isLiking ? 'opacity-50' : ''
               }`}
@@ -278,12 +297,16 @@ const Post = ({ post }) => {
         </div>
         <Bookmark
           onClick={bookmarkHandler}
-          className="cursor-pointer hover:text-gray-600"
+          className={`cursor-pointer hover:text-gray-600 ${
+            isBookmarking ? 'opacity-50' : ''
+          }`}
         />
       </div>
       <span className="font-medium block mb-2">{postLike} likes</span>
       <p>
-        <span className="font-medium mr-2">{post.author?.username}</span>
+        <span className="font-medium mr-2">
+          {post.author?.username || 'Unknown'}
+        </span>
         {post.caption}
       </p>
       {comment.length > 0 && (
@@ -304,8 +327,8 @@ const Post = ({ post }) => {
           placeholder="Add a comment..."
           value={text}
           onChange={changeEventHandler}
-          className="outline-none text-sm w-full "
-          disabled={isCommenting} // Vô hiệu hóa input khi đang gửi
+          className="outline-none text-sm w-full"
+          disabled={isCommenting}
         />
         {text && (
           <span
@@ -318,8 +341,6 @@ const Post = ({ post }) => {
           </span>
         )}
       </div>
-
-      {/* Dialog cho modal xác nhận xóa */}
       <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <div className="text-center">
