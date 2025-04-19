@@ -1,10 +1,11 @@
-# Instagram Clone
+# SOCIAL-MEDIA-VRICE-WEB
 
-A full-stack social media application mimicking core features of Instagram, built with modern web technologies. This project includes user authentication, post creation, real-time messaging, and media uploads, containerized with Docker for easy deployment.
+
+A full-stack social media application mimicking core features , built with modern web technologies. This project includes user authentication, post creation, real-time messaging, and media uploads, containerized with Docker for easy deployment.
 
 ## Table of Contents
 
-- [Instagram Clone](#instagram-clone)
+- [SOCIAL-MEDIA-VRICE-WEB](#social-media-vrice-web)
   - [Table of Contents](#table-of-contents)
   - [Features](#features)
   - [Technologies](#technologies)
@@ -13,8 +14,8 @@ A full-stack social media application mimicking core features of Instagram, buil
   - [Setup Instructions](#setup-instructions)
     - [1. Clone the Repository](#1-clone-the-repository)
     - [2. Configure Environment Variables](#2-configure-environment-variables)
-      - [Backend](#backend)
-      - [Frontend](#frontend)
+      - [Back-end](#back-end)
+      - [Front-end](#front-end)
       - [Docker Compose](#docker-compose)
     - [3. Verify Docker Installation](#3-verify-docker-installation)
   - [Running the Application](#running-the-application)
@@ -31,16 +32,16 @@ A full-stack social media application mimicking core features of Instagram, buil
 - Create, view, like, and comment on posts.
 - Real-time messaging using Socket.io.
 - Image uploads powered by Cloudinary.
-- Responsive frontend with React and Vite.
+- Responsive Front-end with React and Vite.
 - Containerized deployment with Docker and Docker Compose.
 
 ## Technologies
 
-- **Frontend**: React, Vite, Axios, Socket.io-client
-- **Backend**: Node.js, Express, MongoDB, Mongoose, Socket.io, Bcryptjs, Jsonwebtoken, Cloudinary
+- **Front-end**: React, Vite, Axios, Socket.io-client
+- **Back-end**: Node.js, Express, MongoDB, Mongoose, Socket.io, Bcryptjs, Jsonwebtoken, Cloudinary
 - **Database**: MongoDB
 - **Containerization**: Docker, Docker Compose
-- **Web Server**: Nginx (for serving frontend)
+- **Web Server**: Nginx (for serving Front-end)
 - **Environment**: `.env` for configuration
 
 ## Prerequisites
@@ -54,8 +55,8 @@ A full-stack social media application mimicking core features of Instagram, buil
 ## Project Structure
 
 ```
-instagram-clone/
-├── backend/
+VRICE/
+├── Back-end/
 │   ├── src/
 │   │   ├── routes/
 │   │   ├── models/
@@ -66,7 +67,7 @@ instagram-clone/
 │   ├── .dockerignore
 │   ├── .env.example
 │   └── package.json
-├── frontend/
+├── Front-end/
 │   ├── src/
 │   │   ├── components/
 │   │   ├── api.js
@@ -86,19 +87,19 @@ instagram-clone/
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your_username/instagram-clone.git
-cd instagram-clone
+git clone https://github.com/duonyyy/SOCIAL-MEDIA-VRICE-WEB.git
+cd VRICE
 ```
 
 ### 2. Configure Environment Variables
 
-#### Backend
+#### Back-end
 
-- Copy `backend/.env.example` to `backend/.env`:
+- Copy `Back-end/.env.example` to `Back-end/.env`:
   ```bash
-  cp backend/.env.example backend/.env
+  cp Back-end/.env.example Back-end/.env
   ```
-- Edit `backend/.env` with your values:
+- Edit `Back-end/.env` with your values:
   ```env
   PORT=8080
   MONGO_URL=mongodb://localhost:27017/instagram_clone
@@ -113,13 +114,13 @@ cd instagram-clone
   ```
 - Obtain `API_KEY`, `API_SECRET`, and `CLOUD_NAME` from your [Cloudinary dashboard](https://cloudinary.com/console).
 
-#### Frontend
+#### Front-end
 
-- Copy `frontend/.env.example` to `frontend/.env`:
+- Copy `Front-end/.env.example` to `Front-end/.env`:
   ```bash
-  cp frontend/.env.example frontend/.env
+  cp Front-end/.env.example Front-end/.env
   ```
-- Edit `frontend/.env`:
+- Edit `Front-end/.env`:
   ```env
   VITE_API_URL=http://localhost:8080
   VITE_WS_URL=http://localhost:8080
@@ -131,7 +132,7 @@ cd instagram-clone
   ```bash
   cp docker-compose.example.yml docker-compose.yml
   ```
-- Edit `docker-compose.yml` to replace placeholder values (`your_jwt_secret`, `your_cloudinary_api_key`, etc.) with the same values from `backend/.env`.
+- Edit `docker-compose.yml` to replace placeholder values (`your_jwt_secret`, `your_cloudinary_api_key`, etc.) with the same values from `Back-end/.env`.
 
 ### 3. Verify Docker Installation
 
@@ -150,13 +151,13 @@ docker-compose --version
    docker-compose up --build
    ```
 
-   - This starts three services: `backend` (Node.js on port 8080), `frontend` (Nginx on port 80), and `db` (MongoDB on port 27017).
+   - This starts three services: `Back-end` (Node.js on port 8080), `Front-end` (Nginx on port 80), and `db` (MongoDB on port 27017).
    - Use `-d` for detached mode: `docker-compose up --build -d`.
 
 2. Access the application:
 
-   - **Frontend**: Open [http://localhost](http://localhost) in your browser.
-   - **Backend**: Test with [http://localhost:8080/](http://localhost:8080/) (returns `{"message": "Hello, Express!", "success": true}`).
+   - **Front-end**: Open [http://localhost](http://localhost) in your browser.
+   - **Back-end**: Test with [http://localhost:8080/](http://localhost:8080/) (returns `{"message": "Hello, Express!", "success": true}`).
    - **MongoDB**: Connect to `localhost:27017` using MongoDB Compass or a MongoDB client.
 
 3. Stop the containers:
@@ -166,19 +167,19 @@ docker-compose --version
 
 ### Without Docker (Development Mode)
 
-1. **Backend**:
+1. **Back-end**:
 
    ```bash
-   cd backend
+   cd Back-end
    npm install
    npm run dev
    ```
 
    - Requires MongoDB running locally (`mongod`).
 
-2. **Frontend**:
+2. **Front-end**:
    ```bash
-   cd frontend
+   cd Front-end
    npm install
    npm run dev
    ```
@@ -205,7 +206,7 @@ docker-compose --version
 - **Other Endpoints**:
   - `/api/v1/post`: Create, read, update, delete posts.
   - `/api/v1/message`: Send and receive messages (real-time via Socket.io).
-  - See `backend/routes/` for detailed routes.
+  - See `Back-end/routes/` for detailed routes.
 
 ## Troubleshooting
 
@@ -218,16 +219,16 @@ docker-compose --version
     db.users.find()
     ```
   - Register a user if the database is empty (see API Endpoints).
-  - Verify password hashing in `backend/models/User.js`.
+  - Verify password hashing in `Back-end/models/User.js`.
 
 - **CORS Issues**:
 
-  - Ensure `corsOptions` in `backend/index.js` allows `http://localhost` and `http://localhost:5173`.
+  - Ensure `corsOptions` in `Back-end/index.js` allows `http://localhost` and `http://localhost:5173`.
   - Check browser DevTools (Network tab) for CORS errors.
 
 - **MongoDB Connection Failed**:
 
-  - Verify `MONGO_URL` in `backend/.env` or `docker-compose.yml`.
+  - Verify `MONGO_URL` in `Back-end/.env` or `docker-compose.yml`.
   - Check MongoDB logs:
     ```bash
     docker-compose logs db
@@ -235,8 +236,8 @@ docker-compose --version
 
 - **Socket.io Not Connecting**:
 
-  - Confirm `VITE_WS_URL` in `frontend/.env`.
-  - Check backend logs for `A user connected`.
+  - Confirm `VITE_WS_URL` in `Front-end/.env`.
+  - Check Back-end logs for `A user connected`.
 
 - **Nginx 404 on Refresh**:
   - Verify `nginx.conf` has `try_files $uri $uri/ /index.html`.
@@ -244,8 +245,8 @@ docker-compose --version
 For detailed logs:
 
 ```bash
-docker-compose logs backend
-docker-compose logs frontend
+docker-compose logs Back-end
+docker-compose logs Front-end
 docker-compose logs db
 ```
 
