@@ -1,0 +1,132 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Main gradient with yellow -->
+    <linearGradient id="mainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFD93D"/>
+      <stop offset="50%" stop-color="#FF8FAB"/>
+      <stop offset="100%" stop-color="#FF6B6B"/>
+    </linearGradient>
+
+    <!-- Secondary gradient with yellow -->
+    <linearGradient id="secondaryGradient" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFF3B0"/>
+      <stop offset="50%" stop-color="#FFD93D"/>
+      <stop offset="100%" stop-color="#FF9F45"/>
+    </linearGradient>
+
+    <!-- Background gradient -->
+    <radialGradient id="bgGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFBEB"/>
+      <stop offset="100%" stop-color="#FEF3C7"/>
+    </radialGradient>
+
+    <!-- Glow effect -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <!-- Node shadow with yellow tint -->
+    <filter id="nodeShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#FFD93D" flood-opacity="0.4"/>
+    </filter>
+
+    <!-- Connection line gradient -->
+    <linearGradient id="lineGradient">
+      <stop offset="0%" stop-color="#FFD93D"/>
+      <stop offset="50%" stop-color="#FF9F45"/>
+      <stop offset="100%" stop-color="#FF6B6B"/>
+    </linearGradient>
+
+    <!-- Pulse gradient with yellow -->
+    <radialGradient id="pulseGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFD93D" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#FFD93D" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Sparkle filter -->
+    <filter id="sparkle" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <style>
+    @keyframes pulse {
+      0% { r: 20; opacity: 0.6; }
+      100% { r: 30; opacity: 0; }
+    }
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    @keyframes flow {
+      0% { stroke-dashoffset: 24; }
+      100% { stroke-dashoffset: 0; }
+    }
+    @keyframes sparkle {
+      0% { opacity: 0.2; }
+      50% { opacity: 0.8; }
+      100% { opacity: 0.2; }
+    }
+    .pulse-circle {
+      animation: pulse 2s ease-out infinite;
+    }
+    .rotating-circle {
+      animation: rotate 10s linear infinite;
+    }
+    .flow-line {
+      stroke-dasharray: 6 4;
+      animation: flow 1s linear infinite;
+    }
+    .sparkle {
+      animation: sparkle 2s ease-in-out infinite;
+    }
+  </style>
+
+  <!-- Background -->
+  <circle cx="100" cy="100" r="90" fill="url(#bgGradient)" stroke="url(#mainGradient)" stroke-width="4"/>
+
+  <!-- Pulse effect -->
+  <circle class="pulse-circle" cx="100" cy="100" r="20" fill="url(#pulseGradient)"/>
+
+  <!-- Connection lines with gradient and animation -->
+  <g class="flow-line">
+    <line x1="75" y1="70" x2="140" y2="85" stroke="url(#lineGradient)" stroke-width="2.5"/>
+    <line x1="75" y1="70" x2="65" y2="130" stroke="url(#lineGradient)" stroke-width="2.5"/>
+    <line x1="140" y1="85" x2="125" y2="140" stroke="url(#lineGradient)" stroke-width="2.5"/>
+    <line x1="65" y1="130" x2="125" y2="140" stroke="url(#lineGradient)" stroke-width="2.5"/>
+    <line x1="65" y1="130" x2="140" y2="85" stroke="url(#lineGradient)" stroke-width="2" opacity="0.4"/>
+  </g>
+
+  <!-- Connected nodes with glow -->
+  <g filter="url(#glow)">
+    <circle cx="75" cy="70" r="18" fill="url(#mainGradient)" filter="url(#nodeShadow)"/>
+    <circle cx="140" cy="85" r="12" fill="url(#secondaryGradient)" filter="url(#nodeShadow)"/>
+    <circle cx="65" cy="130" r="15" fill="url(#secondaryGradient)" filter="url(#nodeShadow)"/>
+    <circle cx="125" cy="140" r="10" fill="url(#mainGradient)" filter="url(#nodeShadow)"/>
+  </g>
+
+  <!-- Sparkles -->
+  <g class="sparkle" filter="url(#sparkle)">
+    <circle cx="75" cy="70" r="3" fill="#FFD93D" opacity="0.8"/>
+    <circle cx="140" cy="85" r="2" fill="#FFD93D" opacity="0.8"/>
+    <circle cx="65" cy="130" r="2.5" fill="#FFD93D" opacity="0.8"/>
+    <circle cx="125" cy="140" r="2" fill="#FFD93D" opacity="0.8"/>
+  </g>
+
+  <!-- Center icon with rotation -->
+  <g class="rotating-circle">
+    <circle cx="100" cy="100" r="6" fill="url(#secondaryGradient)"/>
+    <circle cx="100" cy="100" r="12" stroke="url(#mainGradient)" stroke-width="2" fill="none"/>
+    <circle cx="100" cy="100" r="18" stroke="url(#secondaryGradient)" stroke-width="1" fill="none" opacity="0.5"/>
+  </g>
+
+  <!-- Decorative elements -->
+  <circle cx="100" cy="100" r="24" stroke="url(#mainGradient)" stroke-width="0.5" fill="none" opacity="0.3"/>
+  <circle cx="100" cy="100" r="30" stroke="url(#secondaryGradient)" stroke-width="0.5" fill="none" opacity="0.2"/>
+
+  <!-- Additional yellow accents -->
+  <circle cx="100" cy="100" r="35" stroke="#FFD93D" stroke-width="0.5" fill="none" opacity="0.15" class="rotating-circle"/>
+  <circle cx="100" cy="100" r="40" stroke="#FFF3B0" stroke-width="0.3" fill="none" opacity="0.1"/>
+</svg>

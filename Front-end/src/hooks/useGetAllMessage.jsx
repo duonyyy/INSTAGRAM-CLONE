@@ -11,7 +11,7 @@ const useGetAllMessage = () => {
     const fetchAllMessage = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:8080/api/v1/message/all/${selectedUser?._id}`,
+          `${process.env.API_BASE_URL}message/all/${selectedUser?._id}`,
           { withCredentials: true }
         );
         if (res.data.success) {

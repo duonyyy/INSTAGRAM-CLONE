@@ -1,3 +1,4 @@
+// components/Post.jsx
 import React, { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Dialog, DialogContent, DialogTrigger } from './ui/dialog';
@@ -86,6 +87,7 @@ const Post = ({ post }) => {
   };
 
   const likeOrDislikeHandler = debounce(likeOrDislikeHandlerBase, 300);
+
   const commentHandlerBase = async () => {
     if (!user) {
       toast.error('Please log in to comment.');
@@ -195,15 +197,17 @@ const Post = ({ post }) => {
   if (!post) return null;
 
   return (
-    <div className="my-8 w-full max-w-sm mx-auto">
+    <div className="my-6 w-full max-w-full sm:max-w-md md:max-w-lg mx-auto px-2 sm:px-0">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Avatar>
+          <Avatar className="w-8 h-8 sm:w-10 sm:h-10">
             <AvatarImage src={post.author?.profilePicture} alt="post_author" />
             <AvatarFallback>CN</AvatarFallback>
           </Avatar>
-          <div className="flex items-center gap-3">
-            <h1>{post.author?.username || 'Unknown'}</h1>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <h1 className="text-sm sm:text-base">
+              {post.author?.username || 'Unknown'}
+            </h1>
             {user?._id === post.author?._id && (
               <Badge variant="secondary">Author</Badge>
             )}
@@ -211,12 +215,12 @@ const Post = ({ post }) => {
         </div>
         <Dialog>
           <DialogTrigger asChild>
-            <MoreHorizontal className="cursor-pointer" />
+            <MoreHorizontal className="cursor-pointer w-5 h-5 sm:w-6 sm:h-6" />
           </DialogTrigger>
-          <DialogContent className="flex flex-col items-center text-sm text-center">
+          <DialogContent className="flex flex-col items-center text-sm text-center max-w-[90vw] sm:max-w-md">
             <Button
               variant="ghost"
-              className="cursor-pointer w-fit"
+              className="cursor-pointer w-fit text-sm sm:text-base"
               onClick={bookmarkHandler}
               disabled={isBookmarking}
             >
@@ -226,7 +230,7 @@ const Post = ({ post }) => {
               <Button
                 onClick={deletePostHandler}
                 variant="ghost"
-                className="cursor-pointer w-fit"
+                className="cursor-pointer w-fit text-sm sm:text-base"
                 disabled={isLoading}
               >
                 {isLoading ? 'Deleting...' : 'Delete'}
@@ -243,15 +247,16 @@ const Post = ({ post }) => {
         }}
         pagination={{ clickable: true }}
         modules={[Navigation, Pagination]}
-        className="mySwiper my-2 w-full aspect-square"
+        className="mySwiper my-3 w-full aspect-[4/3] sm:aspect-square"
       >
         {post.images?.length > 0 ? (
           post.images.map((image, index) => (
             <SwiperSlide key={index}>
-              <img  onClick={() => {
-              dispatch(setSelectedPost(post));
-              setOpen(true);
-            }}
+              <img
+                onClick={() => {
+                  dispatch(setSelectedPost(post));
+                  setOpen(true);
+                }}
                 className="rounded-sm w-full h-full object-cover"
                 src={image}
                 alt={`post_img_${index}`}
@@ -261,18 +266,18 @@ const Post = ({ post }) => {
         ) : (
           <SwiperSlide>
             <div className="w-full h-full flex items-center justify-center bg-gray-200 rounded-sm">
-              <span>No images available</span>
+              <span className="text-sm sm:text-base">No images available</span>
             </div>
           </SwiperSlide>
         )}
       </Swiper>
 
-      <div className="flex items-center justify-between my-2">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between my-3">
+        <div className="flex items-center gap-4 sm:gap-5">
           {liked ? (
             <FaHeart
               onClick={likeOrDislikeHandler}
-              size="22px"
+              size="24"
               className={`cursor-pointer text-red-600 ${
                 isLiking ? 'opacity-50' : ''
               }`}
@@ -280,7 +285,7 @@ const Post = ({ post }) => {
           ) : (
             <FaRegHeart
               onClick={likeOrDislikeHandler}
-              size="22px"
+              size="24"
               className={`cursor-pointer hover:text-gray-600 ${
                 isLiking ? 'opacity-50' : ''
               }`}
@@ -291,19 +296,21 @@ const Post = ({ post }) => {
               dispatch(setSelectedPost(post));
               setOpen(true);
             }}
-            className="cursor-pointer hover:text-gray-600"
+            className="cursor-pointer hover:text-gray-600 w-6 h-6"
           />
-          <Send className="cursor-pointer hover:text-gray-600" />
+          <Send className="cursor-pointer hover:text-gray-600 w-6 h-6" />
         </div>
         <Bookmark
           onClick={bookmarkHandler}
-          className={`cursor-pointer hover:text-gray-600 ${
+          className={`cursor-pointer hover:text-gray-600 w-6 h-6 ${
             isBookmarking ? 'opacity-50' : ''
           }`}
         />
       </div>
-      <span className="font-medium block mb-2">{postLike} likes</span>
-      <p>
+      <span className="font-medium block mb-2 text-sm sm:text-base">
+        {postLike} likes
+      </span>
+      <p className="text-sm sm:text-base">
         <span className="font-medium mr-2">
           {post.author?.username || 'Unknown'}
         </span>
@@ -315,25 +322,25 @@ const Post = ({ post }) => {
             dispatch(setSelectedPost(post));
             setOpen(true);
           }}
-          className="cursor-pointer text-sm text-gray-400"
+          className="cursor-pointer text-xs sm:text-sm text-gray-400"
         >
           View all {comment.length} comments
         </span>
       )}
       <CommentDialog open={open} setOpen={setOpen} />
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mt-2">
         <input
           type="text"
           placeholder="Add a comment..."
           value={text}
           onChange={changeEventHandler}
-          className="outline-none text-sm w-full"
+          className="outline-none text-sm sm:text-base w-full py-1 sm:py-2"
           disabled={isCommenting}
         />
         {text && (
           <span
             onClick={commentHandler}
-            className={`text-[#3BADF8] ${
+            className={`text-[#3BADF8] text-sm sm:text-base ${
               isCommenting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
             }`}
           >
@@ -342,10 +349,10 @@ const Post = ({ post }) => {
         )}
       </div>
       <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] max-w-[90vw]">
           <div className="text-center">
-            <h2 className="text-lg font-semibold">Delete Post?</h2>
-            <p className="text-sm text-gray-500 mt-2">
+            <h2 className="text-base sm:text-lg font-semibold">Delete Post?</h2>
+            <p className="text-xs sm:text-sm text-gray-500 mt-2">
               Are you sure you want to delete this post? This action cannot be
               undone.
             </p>
@@ -355,6 +362,7 @@ const Post = ({ post }) => {
               variant="ghost"
               onClick={() => setIsDeleteModalOpen(false)}
               disabled={isLoading}
+              className="text-sm sm:text-base"
             >
               Cancel
             </Button>
@@ -362,6 +370,7 @@ const Post = ({ post }) => {
               variant="destructive"
               onClick={confirmDelete}
               disabled={isLoading}
+              className="text-sm sm:text-base"
             >
               {isLoading ? 'Deleting...' : 'Delete'}
             </Button>

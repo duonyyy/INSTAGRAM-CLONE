@@ -9,7 +9,7 @@ const useGetUserProfile = (userId) => {
     const fetchUserProfile = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:8080/api/v1/user/${userId}/profile`,
+          `${process.env.API_BASE_URL}user/${userId}/profile`,
           { withCredentials: true }
         );
         if (res.data.success) {

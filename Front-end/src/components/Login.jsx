@@ -8,7 +8,7 @@ import axios from 'axios';
 import { Loader2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setAuthUser } from '@/redux/authSlice';
-
+import logo from '../assets/logov3.svg';
 const Login = () => {
   const [input, setInput] = useState({
     email: '',
@@ -89,8 +89,16 @@ const Login = () => {
         className="shadow-lg flex flex-col gap-5 p-8"
       >
         <div className="my-4">
-          <h1 className="text-center font-bold text-xl">LOGO</h1>
-          <p className="text-sm text-center">
+          <div className="flex items-center justify-center">
+            <img
+              src={logo}
+              alt="Social Network Logo"
+              width={58}
+              height={58}
+              className="object-contain"
+            />
+          </div>
+          <p className="text-sm text-center text-gray-600 mt-4">
             Login to see photos & videos from your friends
           </p>
         </div>

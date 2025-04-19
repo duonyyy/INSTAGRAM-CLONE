@@ -43,7 +43,7 @@ const CreatePost = ({ open, setOpen }) => {
     formData.append("caption", caption);
     if (files.length > 0) {
       files.forEach((file) => {
-        formData.append("images", file); // Thêm từng file vào field 'images'
+        formData.append("images", file); 
       });
     } else {
       toast.error("Please select at least one image");
